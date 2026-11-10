@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Криптарій - Лабораторна робота №1</title>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <div class="lab-subtitle" id="header-subtitle">
+            ЛАБОРАТОРНА РОБОТА №1 • КРИПТОГРАФІЯ
+          </div>
+          <h1 class="main-title">
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"
+              ></path>
+            </svg>
+            <span>Криптарій</span>
+          </h1>
+          <div class="desc" id="header-desc">
+            Шифр Цезаря та таблична перестановка: шифрування, розшифрування й
+            гістограми частот.
+          </div>
+        </div>
+
+        <div class="lab-switcher">
+          <button class="lab-btn active" id="btn-lab1" onclick="switchLab(1)">
+            Лаб 1: Шифри
+          </button>
+          <button class="lab-btn" id="btn-lab2" onclick="switchLab(2)">
+            Лаб 2: JWT Токени
+          </button>
+          <button class="lab-btn" id="btn-lab3" onclick="switchLab(3)">
+            Лаб 3: S-DES
+          </button>
+        </div>
+      </header>
+
+      <!-- ==================== ЛАБОРАТОРНА РОБОТА №1 ==================== -->
+      <section id="lab1-section" class="lab-section active">
+        <div class="app-layout">
+          <aside class="sidebar">
+            <div class="tabs">
+              <div
+                class="tab active"
+                id="tab-caesar"
+                onclick="setCipher('caesar')"
+              >
+                Цезар
+              </div>
+              <div class="tab" id="tab-perm" onclick="setCipher('perm')">
+                Перестановка
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Абетка</label>
+              <select id="alphabet-select" onchange="updateHistograms()">
+                <option value="uk">Українська</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label id="key-label">Зміщення k</label>
+              <input type="number" id="cipher-key" value="7" />
+            </div>
+
+            <div class="action-grid">
+              <button class="primary" onclick="processText('encrypt')">
+                Зашифрувати
+              </button>
+              <button onclick="processText('decrypt')">Розшифрувати</button>
+              <button onclick="loadSample()">Зразок</button>
+              <button onclick="clearAll()">Очистити</button>
+            </div>
+
+            <div class="file-actions">
+              <button onclick="document.getElementById('file-input').click()">
+                Відкрити .txt
+              </button>
+              <input
+                type="file"
+                id="file-input"
+                style="display: none"
+                accept=".txt"
+                onchange="openFile(event)"
+              />
+              <button onclick="saveFile('input')">Зберегти вихідний</button>
+              <button onclick="saveFile('output')">Зберегти шифртекст</button>
+              <div class="file-status" id="file-status">
+                Файл ще не відкрито
+              </div>
+            </div>
+          </aside>
+
+          <main class="workspace">
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Вихідний текст</h3>
+                <span class="char-count" id="in-count">0 символів</span>
+              </div>
+              <textarea
+                id="input-text"
+                placeholder="Вставте відкритий текст або відкрийте файл..."
+                oninput="onInputTextChange()"
+              ></textarea>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Шифртекст</h3>
+                <span class="char-count" id="out-count">0 символів</span>
+              </div>
+              <textarea
+                id="output-text"
+                placeholder="Тут з'явиться результат..."
+              ></textarea>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Гістограми частот</h3>
+              </div>
+              <div class="histogram-container">
+                <div class="histogram-title">Вихідний текст</div>
+                <div class="chart" id="chart-input"></div>
+              </div>
+              <div class="histogram-container">
+                <div class="histogram-title">Шифртекст</div>
+                <div class="chart" id="chart-output"></div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </section>
+
+      <!-- ==================== ЛАБОРАТОРНА РОБОТА №2 ==================== -->
+      <section id="lab2-section" class="lab-section">
+        <div class="app-layout">
+          <!-- Панель авторизації та налаштувань JWT -->
+          <aside class="sidebar">
+            <div class="panel-header" style="margin-bottom: 0">
+              <h3>Налаштування власника</h3>
+              <span class="badge">HS256</span>
+            </div>
+
+            <div class="input-group">
+              <label>Secret (FirstnameLastname)</label>
+              <input
+                type="text"
+                id="jwt-secret"
+                value="DavidNovak"
+                oninput="renderUsersTable()"
+              />
+            </div>
+
+            <div class="input-group">
+              <label>Ваш номер у списку (час дії, хв)</label>
+              <input type="number" id="jwt-exp-minutes" value="13" min="1" />
+            </div>
+
+            <div
+              style="
+                border-top: 1px solid var(--border-color);
+                padding-top: 15px;
+              "
+            >
+              <div class="panel-header">
+                <h3>Шлях: POST /login</h3>
+              </div>
+
+              <div class="input-group" style="margin-bottom: 10px">
+                <label>Логін (Прізвище)</label>
+                <input type="text" id="login-username" value="Новак" />
+              </div>
+
+              <div class="input-group" style="margin-bottom: 14px">
+                <label>Пароль (Ім'я)</label>
+                <input type="text" id="login-password" value="Давид" />
+              </div>
+
+              <button
+                class="primary"
+                style="width: 100%"
+                onclick="handleLogin()"
+              >
+                Увійти та згенерувати JWT
+              </button>
+              <div
+                id="login-status"
+                class="status-box"
+                style="display: none"
+              ></div>
+            </div>
+          </aside>
+
+          <main class="workspace">
+            <!-- База даних користувачів -->
+            <div class="panel">
+              <div class="panel-header">
+                <h3>База даних користувачів (SHA-256 без солі)</h3>
+                <span class="badge">3 користувачі за списком</span>
+              </div>
+              <div
+                style="
+                  color: var(--text-muted);
+                  font-size: 0.83rem;
+                  margin-bottom: 10px;
+                "
+              >
+                Ви можете змінити дані на свої та своїх одногрупників (вище і
+                нижче у списку). Пароль у базі автоматично зберігається у
+                вигляді SHA-256 хешу.
+              </div>
+              <div style="overflow-x: auto">
+                <table class="db-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 90px">ID (№)</th>
+                      <th>Логін (Прізвище)</th>
+                      <th>Відкритий пароль (Ім'я)</th>
+                      <th>Хеш пароля в БД (SHA-256)</th>
+                      <th>Дія</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Згенерований JWT Токен -->
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Згенерований JSON Web Token (JWT)</h3>
+                <div style="display: flex; gap: 8px">
+                  <button
+                    onclick="copyToken()"
+                    style="padding: 6px 12px; font-size: 0.8rem"
+                  >
+                    Копіювати токен
+                  </button>
+                  <button
+                    onclick="window.open('https://jwt.io', '_blank')"
+                    style="padding: 6px 12px; font-size: 0.8rem"
+                  >
+                    Перевірити на jwt.io ↗
+                  </button>
+                </div>
+              </div>
+
+              <div class="jwt-box" id="jwt-output">
+                Авторизуйтесь через форму ліворуч, щоб отримати JWT токен...
+              </div>
+
+              <div class="jwt-parts-grid">
+                <div>
+                  <div class="histogram-title" style="color: #ff6b8b">
+                    HEADER (Заголовок)
+                  </div>
+                  <pre id="jwt-header-json">
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}</pre
+                  >
+                </div>
+                <div>
+                  <div class="histogram-title" style="color: #d291ff">
+                    PAYLOAD (Корисне навантаження)
+                  </div>
+                  <pre id="jwt-payload-json">{}</pre>
+                </div>
+              </div>
+            </div>
+
+            <!-- Перевірка захищеного маршруту (Bearer Token) -->
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Захищений маршрут: GET /protected</h3>
+                <span class="badge">Authorization: Bearer &lt;token&gt;</span>
+              </div>
+              <div class="input-group" style="margin-bottom: 12px">
+                <label>Вставте Bearer токен для перевірки доступу:</label>
+                <textarea
+                  id="bearer-input"
+                  style="
+                    min-height: 70px;
+                    font-family: var(--mono-font);
+                    font-size: 0.82rem;
+                  "
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                ></textarea>
+              </div>
+              <button class="primary" onclick="verifyProtectedRoute()">
+                Надіслати запит із Bearer токеном
+              </button>
+              <div
+                id="protected-status"
+                class="status-box"
+                style="display: none"
+              ></div>
+            </div>
+          </main>
+        </div>
+      </section>
+      <!-- ==================== ЛАБОРАТОРНА РОБОТА №3 ==================== -->
+      <section id="lab3-section" class="lab-section">
+        <div class="app-layout">
+          <aside class="sidebar">
+            <div class="panel-header" style="margin-bottom: 0">
+              <h3>Вхідні дані (S-DES)</h3>
+            </div>
+
+            <div class="input-group">
+              <label>10-бітний ключ (K)</label>
+              <input
+                type="text"
+                id="sdes-key"
+                value="0011011101"
+                maxlength="10"
+              />
+            </div>
+
+            <div class="input-group">
+              <label>8-бітний блок тексту</label>
+              <input
+                type="text"
+                id="sdes-text"
+                value="11100011"
+                maxlength="8"
+              />
+            </div>
+
+            <div
+              style="
+                font-size: 0.8rem;
+                color: var(--text-muted);
+                margin-bottom: 5px;
+              "
+            >
+              Ваш варіант 13: Криптограма 11100011. Оберіть "Розшифрувати".
+            </div>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-top: 5px;
+              "
+            >
+              <button class="primary" onclick="processSDES('encrypt')">
+                Зашифрувати
+              </button>
+              <button
+                class="primary"
+                onclick="processSDES('decrypt')"
+                style="
+                  background-color: var(--accent-blue);
+                  color: var(--text-main);
+                "
+              >
+                Розшифрувати
+              </button>
+            </div>
+          </aside>
+
+          <main class="workspace">
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Протокол виконання (Покроково)</h3>
+              </div>
+              <div class="sdes-log" id="sdes-log">
+                Очікування вводу даних... Натисніть кнопку ліворуч.
+              </div>
+            </div>
+          </main>
+        </div>
+      </section>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
