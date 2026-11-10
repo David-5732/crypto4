@@ -9,10 +9,14 @@ function switchLab(labNum) {
   document
     .getElementById("lab3-section")
     .classList.toggle("active", labNum === 3);
+  document
+    .getElementById("lab4-section")
+    .classList.toggle("active", labNum === 4);
 
   document.getElementById("btn-lab1").classList.toggle("active", labNum === 1);
   document.getElementById("btn-lab2").classList.toggle("active", labNum === 2);
   document.getElementById("btn-lab3").classList.toggle("active", labNum === 3);
+  document.getElementById("btn-lab4").classList.toggle("active", labNum === 4);
 
   const subtitle = document.getElementById("header-subtitle");
   const desc = document.getElementById("header-desc");
@@ -25,10 +29,14 @@ function switchLab(labNum) {
     subtitle.innerText = "ЛАБОРАТОРНА РОБОТА №2 • АВТЕНТИФІКАЦІЯ ТА JWT";
     desc.innerText =
       "Генерація та валідація JSON Web Token (HS256), хешування паролів SHA-256 без солі та захищений маршрут.";
-  } else {
+  } else if (labNum === 3) {
     subtitle.innerText = "ЛАБОРАТОРНА РОБОТА №3 • КРИПТОГРАФІЯ";
     desc.innerText =
       "Система блочного шифрування S-DES. Покрокове шифрування та розшифрування 8-бітних блоків.";
+  } else {
+    subtitle.innerText = "ЛАБОРАТОРНА РОБОТА №4 • КРИПТОГРАФІЯ";
+    desc.innerText =
+      'Протокол Діффі-Хеллмана. Безпечний обмін ключами та симуляція атаки "Людина посередині" (MITM).';
   }
 }
 
@@ -745,4 +753,129 @@ function processSDES(mode) {
   );
 
   logContainer.innerHTML = logHTML;
+}
+
+/* ==================== ЛАБОРАТОРНА №4: DIFFIE-HELLMAN ==================== */
+
+// Функція для обчислення (base^exponent) mod modulus з підтримкою великих чисел
+function modPow(base, exponent, modulus) {
+  if (modulus === 1n) return 0n;
+  let result = 1n;
+  base = base % modulus;
+  while (exponent > 0n) {
+    if (exponent % 2n === 1n) result = (result * base) % modulus;
+    exponent = exponent / 2n;
+    base = (base * base) % modulus;
+  }
+  return result;
+}
+
+function toggleMITM() {
+  const isMITM = document.getElementById("mitm-active").checked;
+  document.getElementById("mitm-controls").style.display = isMITM
+    ? "block"
+    : "none";
+}
+
+function simulateDH() {
+  // Зчитуємо параметри та конвертуємо в BigInt для запобігання переповнення
+  const p = BigInt(document.getElementById("dh-p").value);
+  const g = BigInt(document.getElementById("dh-g").value);
+  const a = BigInt(document.getElementById("alice-a").value);
+  const b = BigInt(document.getElementById("bob-b").value);
+
+  const isMITM = document.getElementById("mitm-active").checked;
+
+  const aliceLog = document.getElementById("alice-log");
+  const bobLog = document.getElementById("bob-log");
+  const eveLog = document.getElementById("eve-log");
+
+  // Крок 1: Обчислення відкритих ключів
+  const A = modPow(g, a, p); // A = g^a mod p
+  const B = modPow(g, b, p); // B = g^b mod p
+
+  if (!isMITM) {
+    // --- НОРМАЛЬНИЙ ОБМІН ---
+    // Крок 2: Обчислення спільного секрету
+    const kAlice = modPow(B, a, p); // K = B^a mod p
+    const kBob = modPow(A, b, p); // K = A^b mod p
+
+    aliceLog.innerHTML = `
+            Відомо: (p=${p}, g=${g}, <span class="highlight">a=${a}</span>)<br><br>
+            Обчислює відкритий ключ <b>A</b>:<br>
+            A = g<sup>a</sup> mod p<br>
+            A = ${g}<sup>${a}</sup> mod ${p} = <span class="result-color">${A}</span><br><br>
+            <i>Надсилає A Бобу -></i><br>
+            <i><- Отримує B від Боба (${B})</i><br><br>
+            Обчислює спільний ключ <b>K</b>:<br>
+            K = B<sup>a</sup> mod p<br>
+            K = ${B}<sup>${a}</sup> mod ${p} = <b style="color:var(--accent-orange)">${kAlice}</b>
+        `;
+
+    bobLog.innerHTML = `
+            Відомо: (p=${p}, g=${g}, <span class="highlight">b=${b}</span>)<br><br>
+            Обчислює відкритий ключ <b>B</b>:<br>
+            B = g<sup>b</sup> mod p<br>
+            B = ${g}<sup>${b}</sup> mod ${p} = <span class="result-color">${B}</span><br><br>
+            <i><- Отримує A від Аліси (${A})</i><br>
+            <i>Надсилає B Алісі -></i><br><br>
+            Обчислює спільний ключ <b>K</b>:<br>
+            K = A<sup>b</sup> mod p<br>
+            K = ${A}<sup>${b}</sup> mod ${p} = <b style="color:var(--accent-green-text)">${kBob}</b>
+        `;
+
+    eveLog.innerHTML = `
+            <i>Прослуховує канал...</i><br><br>
+            Перехоплено від Аліси: <b>A = ${A}</b><br>
+            Перехоплено від Боба: <b>B = ${B}</b><br><br>
+            <span class="danger-text">Зловмисник бачить відкриті ключі, але не може обчислити спільний ключ K без знання 'a' або 'b'.</span>
+        `;
+  } else {
+    // --- АТАКА "ЛЮДИНА ПОСЕРЕДИНІ" (MITM) ---
+    const c = BigInt(document.getElementById("eve-c").value); // Секретний ключ зловмисника
+    const C = modPow(g, c, p); // Відкритий ключ зловмисника: C = g^c mod p
+
+    // Аліса обчислює секрет з ключем зловмисника (думаючи, що це Боб)
+    const kAliceEve = modPow(C, a, p); // K1 = C^a mod p
+    // Боб обчислює секрет з ключем зловмисника (думаючи, що це Аліса)
+    const kBobEve = modPow(C, b, p); // K2 = C^b mod p
+
+    // Зловмисник обчислює обидва секрети
+    const kEveAlice = modPow(A, c, p); // K1 = A^c mod p
+    const kEveBob = modPow(B, c, p); // K2 = B^c mod p
+
+    aliceLog.innerHTML = `
+            Відомо: (p=${p}, g=${g}, <span class="highlight">a=${a}</span>)<br><br>
+            Обчислює відкритий ключ <b>A</b>:<br>
+            A = g<sup>a</sup> mod p = <span class="result-color">${A}</span><br><br>
+            <i>Надсилає A Бобу -> (перехоплено MITM)</i><br>
+            <i><- Отримує підмінений ключ від MITM (${C})</i><br><br>
+            Обчислює спільний ключ <b>K1</b>:<br>
+            K1 = ${C}<sup>${a}</sup> mod ${p} = <b style="color:var(--accent-orange)">${kAliceEve}</b><br><br>
+            <span class="danger-text">Аліса думає, що K1 (${kAliceEve}) — це секрет із Бобом.</span>
+        `;
+
+    bobLog.innerHTML = `
+            Відомо: (p=${p}, g=${g}, <span class="highlight">b=${b}</span>)<br><br>
+            Обчислює відкритий ключ <b>B</b>:<br>
+            B = g<sup>b</sup> mod p = <span class="result-color">${B}</span><br><br>
+            <i><- Отримує підмінений ключ від MITM (${C})</i><br>
+            <i>Надсилає B Алісі -> (перехоплено MITM)</i><br><br>
+            Обчислює спільний ключ <b>K2</b>:<br>
+            K2 = ${C}<sup>${b}</sup> mod ${p} = <b style="color:var(--accent-green-text)">${kBobEve}</b><br><br>
+            <span class="danger-text">Боб думає, що K2 (${kBobEve}) — це секрет із Алісою.</span>
+        `;
+
+    eveLog.innerHTML = `
+            <span style="color:#ff6b8b; font-weight:bold;">УВАГА: Атака MITM активна!</span><br>
+            Секретний ключ зловмисника: <span class="highlight">c = ${c}</span><br>
+            Відкритий ключ зловмисника: <b>C</b> = g<sup>c</sup> mod p = ${C}<br><br>
+            
+            Перехопив <b>A=${A}</b> і надіслав Алісі <b>C=${C}</b><br>
+            Перехопив <b>B=${B}</b> і надіслав Бобу <b>C=${C}</b><br><br>
+            
+            Зловмисник обчислює <b>K1</b> (з Алісою): ${A}<sup>${c}</sup> mod ${p} = <b style="color:#ff6b8b">${kEveAlice}</b><br>
+            Зловмисник обчислює <b>K2</b> (з Бобом): ${B}<sup>${c}</sup> mod ${p} = <b style="color:#ff6b8b">${kEveBob}</b>
+        `;
+  }
 }

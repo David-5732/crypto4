@@ -37,14 +37,17 @@
         </div>
 
         <div class="lab-switcher">
-          <button class="lab-btn active" id="btn-lab1" onclick="switchLab(1)">
-            Лаб 1: Шифри
+          <button class="lab-btn" id="btn-lab1" onclick="switchLab(1)">
+            Лаб 1
           </button>
           <button class="lab-btn" id="btn-lab2" onclick="switchLab(2)">
-            Лаб 2: JWT Токени
+            Лаб 2
           </button>
           <button class="lab-btn" id="btn-lab3" onclick="switchLab(3)">
             Лаб 3: S-DES
+          </button>
+          <button class="lab-btn active" id="btn-lab4" onclick="switchLab(4)">
+            Лаб 4: Diffie-Hellman
           </button>
         </div>
       </header>
@@ -389,6 +392,130 @@
               </div>
             </div>
           </main>
+        </div>
+      </section>
+      <!-- ==================== ЛАБОРАТОРНА РОБОТА №4 ==================== -->
+      <section id="lab4-section" class="lab-section active">
+        <div class="app-layout">
+          <!-- Панель Аліси -->
+          <div
+            class="panel"
+            style="flex: 1; border-color: var(--accent-orange)"
+          >
+            <div class="panel-header">
+              <h3 style="color: var(--accent-orange)">Аліса</h3>
+            </div>
+            <div class="input-group">
+              <label>Секретний ключ (a)</label>
+              <input type="number" id="alice-a" value="46" min="1" />
+            </div>
+            <div class="sdes-log" style="margin-top: 15px; min-height: 250px">
+              <div id="alice-log">Очікування генерації...</div>
+            </div>
+          </div>
+
+          <!-- Центральна панель (Канал / Зловмисник) -->
+          <div
+            class="panel"
+            style="
+              flex: 1.2;
+              border-color: #ff6b8b;
+              background-color: rgba(255, 107, 139, 0.05);
+            "
+          >
+            <div class="panel-header">
+              <h3 style="color: #ff6b8b">Відкритий канал / MITM</h3>
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 5px;
+                  cursor: pointer;
+                  color: var(--text-main);
+                "
+              >
+                <input
+                  type="checkbox"
+                  id="mitm-active"
+                  onchange="toggleMITM()"
+                />
+                <strong>Активувати атаку (MITM)</strong>
+              </label>
+            </div>
+
+            <div
+              class="input-group"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+            >
+              <div>
+                <label>Просте число (p)</label>
+                <input type="number" id="dh-p" value="331" min="2" />
+              </div>
+              <div>
+                <label>Генератор (g)</label>
+                <input type="number" id="dh-g" value="204" min="2" />
+              </div>
+            </div>
+
+            <div
+              id="mitm-controls"
+              style="
+                display: none;
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 1px dashed #ff6b8b;
+              "
+            >
+              <div class="input-group">
+                <label style="color: #ff6b8b"
+                  >Секретний ключ зловмисника (c)</label
+                >
+                <input
+                  type="number"
+                  id="eve-c"
+                  value="99"
+                  min="1"
+                  style="border-color: #ff6b8b"
+                />
+              </div>
+            </div>
+
+            <div
+              style="margin-top: 20px; display: flex; justify-content: center"
+            >
+              <button
+                class="primary"
+                onclick="simulateDH()"
+                style="width: 100%; background-color: #ff6b8b"
+              >
+                Симулювати обмін
+              </button>
+            </div>
+
+            <div
+              class="sdes-log"
+              style="margin-top: 15px; min-height: 120px; border-color: #ff6b8b"
+            >
+              <div id="eve-log">Зловмисник прослуховує канал...</div>
+            </div>
+          </div>
+
+          <!-- Панель Боба -->
+          <div
+            class="panel"
+            style="flex: 1; border-color: var(--accent-green-text)"
+          >
+            <div class="panel-header">
+              <h3 style="color: var(--accent-green-text)">Боб</h3>
+            </div>
+            <div class="input-group">
+              <label>Секретний ключ (b)</label>
+              <input type="number" id="bob-b" value="56" min="1" />
+            </div>
+            <div class="sdes-log" style="margin-top: 15px; min-height: 250px">
+              <div id="bob-log">Очікування генерації...</div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
